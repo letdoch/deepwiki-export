@@ -128,7 +128,7 @@ def main(
     # output_base_dir is already resolved by Typer
     final_output_directory = output_base_dir / target_subdir_path
     
-    # 改为save_markdown_from_url/save_chunks_to_dir函数内部创建文件夹，为防止为无效目标url创建空文件夹
+    # Changed to create folders inside save_markdown_from_url/save_chunks_to_dir functions to prevent creating empty folders for invalid target URLs
     # logging.info(f"Ensuring output directory: '{final_output_directory.resolve()}'")
     # try:
     #     final_output_directory.mkdir(parents=True, exist_ok=True)
