@@ -43,6 +43,7 @@ deepwiki-export [OPTIONS] URL
 | ----------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `--output-base-dir DIR`       | `-o` | 基础输出目录。将在此目录下创建一个新的子目录`user_name/repo_name`来存储输出文件。                               | `.` (当前目录) |
 | `--keep-html`                 |      | 保存原始下载的 HTML 文件（将保存在自动生成的输出子目录中）。                                                                                       | `False`       |
+| `--single-file`               |      | 将所有内容导出为单个 Markdown 文件，而不是多个文件。                                                                                    | `False`       |
 | `--html-encoding ENCODING`    |      | 下载的 HTML 内容的编码。                                                                                                             | `utf-8`       |
 | `--md-encoding ENCODING`      |      | 输出 Markdown 文件的编码。如果未设置，则默认为 HTML 编码。                                                                                 | `None`        |
 | `--user-agent STRING`         |      | HTTP 请求的自定义 User-Agent 字符串。覆盖默认值。                                                                                        | `None`        |
@@ -52,6 +53,8 @@ deepwiki-export [OPTIONS] URL
 | `--help`                      | `-h` | 显示帮助信息并退出。                                                                                                               |               |
 
 ## 示例
+
+### 多文件模式（默认）
 
 假设您要从 Roo Code 项目的某个 DeepWiki 页面导出内容，并希望输出到当前目录下的 `my_exports` 基础目录中：
 
@@ -64,6 +67,25 @@ deepwiki-export --output-base-dir ./my_exports "https://deepwiki.com/RooVetGit/R
 - 在 `./my_exports/` 目录下创建一个名为 `RooVetGit_Roo-Code` (或类似，取决于 `derive_dirname_from_url` 的具体实现) 的子目录。
 - 在该子目录 (`./my_exports/RooVetGit_Roo-Code/`) 内，将每个提取的章节保存为单独的 Markdown 文件 (例如 `chapter_1.md`, `chapter_2.md`, ...)。
 - 同时，原始 HTML 文件 (例如 `_original_page.html`) 也会保存在这个子目录中。
+
+### 单文件模式
+
+如果您希望将所有内容合并到一个 Markdown 文件中，请使用 `--single-file` 选项：
+
+```bash
+deepwiki-export --single-file "https://deepwiki.com/pydantic/logfire"
+```
+
+这将：
+- 从指定的 DeepWiki URL 下载内容。
+- 在当前目录下创建一个名为 `pydantic/logfire/` 的子目录。
+- 在该子目录内，将所有章节合并为一个 `logfire.md` 文件，章节之间用 `---` 分隔符分隔。
+
+您也可以结合其他选项使用：
+
+```bash
+deepwiki-export --single-file --output-base-dir ./exports --keep-html --verbose "https://deepwiki.com/pydantic/logfire"
+```
 
 ## 贡献
 
