@@ -1,7 +1,7 @@
 import requests
 import logging # Added for logging
 from pathlib import Path # Added for Path object
-from .extract_markdown_from_html import MARKDOWN_CHUNK_REGEX,DEFAULT_ENCODING,extract_chunks_from_html # DEFAULT_SEP and save_chunks_to_path removed
+from .extract_markdown_from_html import MARKDOWN_CHUNK_REGEX,DEFAULT_ENCODING,extract_chunks_from_html,chunks_to_str,save_chunks_to_path # DEFAULT_SEP and save_chunks_to_path removed
 from .chunk_processor import save_chunks_to_dir
 from .utils import derive_filename_from_chunk_content # For deriving individual Chunk filenames
 # derive_filename_from_url might still be useful for the original HTML filename if desired
@@ -19,11 +19,12 @@ def save_markdown_from_url(
     html_content_encoding: str = DEFAULT_ENCODING,
     markdown_file_encoding: str|None = None,
     request_headers: dict[str, str]|None = None,
-    request_timeout: int = 30  # seconds
+    request_timeout: int = 30,  # seconds
+    single_file_export: bool = False
 ) -> bool|None:
     """
     Downloads HTML from a target URL (DeepWiki or GitHub), extracts content Chunks,
-    and saves them as individual Markdown files in a specified directory.
+    and saves them as individual Markdown files in a specified directory or as a single file.
     Optionally saves the original HTML in the same directory.
 
     The target_url must start with "https://deepwiki.com/" or "https://github.com/".
@@ -39,6 +40,7 @@ def save_markdown_from_url(
         markdown_file_encoding: Encoding for the output Markdown file. Defaults to html_content_encoding.
         request_headers: Optional dictionary of headers for the HTTP GET request.
         request_timeout: Timeout in seconds for the HTTP GET request.
+        single_file_export: If True, concatenates all chunks into a single file instead of individual files.
 
     Returns:
         True if processing was successful, False otherwise.
@@ -140,20 +142,47 @@ def save_markdown_from_url(
 
     actual_markdown_encoding = markdown_file_encoding if markdown_file_encoding is not None else html_content_encoding
     
-    logging.debug(f"Attempting save Chunks into: '{target_output_directory.resolve()}' with encoding {actual_markdown_encoding}")
-    
-    save_success = save_chunks_to_dir(
-        chunks=markdown_chunks,
-        output_dir=target_output_directory,
-        filename_deriver=derive_filename_from_chunk_content, # from .utils
-        file_extension=".md", # Ensure leading dot
-        encoding=actual_markdown_encoding
-    )
-
-    if save_success:
-        logging.debug(f"Success all Chunks saved into '{target_output_directory.resolve()}'")
-        return True
+    if single_file_export:
+        # Single file export mode
+        logging.debug(f"Single file export mode: concatenating {len(markdown_chunks)} chunks")
+        
+        # Derive a filename based on the URL 
+        single_filename_base = derive_filename_from_url(target_url, extension="")
+        if not single_filename_base or single_filename_base == "untitled":
+            single_filename_base = "export"
+        
+        single_file_path = target_output_directory / f"{single_filename_base}.md"
+        
+        logging.debug(f"Attempting to save single file to: '{single_file_path.resolve()}' with encoding {actual_markdown_encoding}")
+        
+        try:
+            save_chunks_to_path(
+                markdown_chunks=markdown_chunks,
+                file_path=str(single_file_path),
+                encoding=actual_markdown_encoding
+            )
+            logging.info(f"Success: All chunks saved to single file '{single_file_path.resolve()}'")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to save chunks to single file '{single_file_path.resolve()}': {e}")
+            return False
     else:
-        logging.error(f"Failed to save same Chunks into '{target_output_directory.resolve()}'")
-        return False
+        # Multiple files export mode (original behavior)
+        logging.debug(f"Multiple files export mode: saving {len(markdown_chunks)} chunks as separate files")
+        logging.debug(f"Attempting save Chunks into: '{target_output_directory.resolve()}' with encoding {actual_markdown_encoding}")
+        
+        save_success = save_chunks_to_dir(
+            chunks=markdown_chunks,
+            output_dir=target_output_directory,
+            filename_deriver=derive_filename_from_chunk_content, # from .utils
+            file_extension=".md", # Ensure leading dot
+            encoding=actual_markdown_encoding
+        )
+
+        if save_success:
+            logging.debug(f"Success all Chunks saved into '{target_output_directory.resolve()}'")
+            return True
+        else:
+            logging.error(f"Failed to save same Chunks into '{target_output_directory.resolve()}'")
+            return False
 

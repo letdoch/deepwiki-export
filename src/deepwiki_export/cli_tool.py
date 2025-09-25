@@ -88,6 +88,11 @@ def main(
         "--verbose", "-v",
         help="Enable verbose output (DEBUG level logging).",
         show_default=False
+    ),
+    single_file: bool = typer.Option(
+        False,
+        "--single-file",
+        help="Export all content as a single markdown file instead of multiple files."
     )
 ):
     """
@@ -154,14 +159,18 @@ def main(
         html_content_encoding=html_encoding,
         markdown_file_encoding=md_encoding,
         request_headers=final_request_headers,
-        request_timeout=timeout
+        request_timeout=timeout,
+        single_file_export=single_file
     )
 
     if success is None:
         logging.info(f"Success: Repository Not Indexed '{url}'")        
         sys.exit(0)
     elif success:
-        logging.info(f"Success: Processed '{url}'. Chunks saved into '{final_output_directory.resolve()}'")        
+        if single_file:
+            logging.info(f"Success: Processed '{url}'. Single file saved to '{final_output_directory.resolve()}'")
+        else:
+            logging.info(f"Success: Processed '{url}'. Chunks saved into '{final_output_directory.resolve()}'")
         sys.exit(0)
     else:
         logging.error(f"Error: Failed to process '{url}'. Output might be incomplete in '{final_output_directory.resolve()}'")
